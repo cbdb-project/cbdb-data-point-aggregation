@@ -30,8 +30,11 @@ DYNASTY_TABLE_NAME = "DYNASTIES"
 DYNASTY_NAME_COLUMN = "c_dynasty_chn"
 
 # read person_id.txt
-person_id = pd.read_csv("person_id.txt", header=None).values.tolist()
-person_id = tuple([i[0] for i in person_id])
+try:
+    person_id = pd.read_csv("person_id.txt", header=None).values.tolist()
+    person_id = tuple([i[0] for i in person_id])
+except:
+    person_id = ()
 
 # Create sql query
 sql_query = f"""
@@ -64,15 +67,18 @@ JOIN
 ON
     {BIOG_MAIN_TABLE_NAME}.{MAIN_TABLE_PERSON_DY_COLUMN} = {DYNASTY_TABLE_NAME}.{MAIN_TABLE_PERSON_DY_COLUMN}
 WHERE
-    {BIOG_MAIN_TABLE_NAME}.{MAIN_TABLE_PERSON_ID_COLUMN} IN {person_id}
-    AND(
-        {BIOG_MAIN_TABLE_NAME}.{MAIN_TABLE_PERSON_DY_COLUMN} IN {DY_LIST}
-        OR(
-            {BIOG_MAIN_TABLE_NAME}.{MAIN_TABLE_PERSON_INDEX_YEAR_COLUMN} >= {INDEX_YEAR_START}
-            AND
-            {BIOG_MAIN_TABLE_NAME}.{MAIN_TABLE_PERSON_INDEX_YEAR_COLUMN} <= {INDEX_YEAR_END})
-        )
+    ({BIOG_MAIN_TABLE_NAME}.{MAIN_TABLE_PERSON_DY_COLUMN} IN {DY_LIST}
+    OR(
+        {BIOG_MAIN_TABLE_NAME}.{MAIN_TABLE_PERSON_INDEX_YEAR_COLUMN} >= {INDEX_YEAR_START}
+        AND
+        {BIOG_MAIN_TABLE_NAME}.{MAIN_TABLE_PERSON_INDEX_YEAR_COLUMN} <= {INDEX_YEAR_END})
+    )
 """
+
+if len(person_id) != 0:
+    sql_query += (
+        f"AND ({BIOG_MAIN_TABLE_NAME}.{MAIN_TABLE_PERSON_ID_COLUMN} IN {person_id})"
+    )
 
 # print(sql_query)
 
@@ -83,6 +89,9 @@ df["dynasty"] = df["dynasty"].fillna("no_data")
 df["dynasty_name"] = df["dynasty_name"].fillna("no_data")
 
 SEP = "|"
+
+print("Data loaded successfully!")
+print("Start aggregating data...")
 
 
 # aggregate data by personid, the output format is as follows:
